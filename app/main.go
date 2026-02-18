@@ -14,7 +14,6 @@ func main() {
 	fmt.Print("$ ")
 	reader := bufio.NewReader(os.Stdin)
 	for {
-		fmt.Print("$ ")
 		// Wait for user input
 		command, err := reader.ReadString('\n')
 		if err != nil {
