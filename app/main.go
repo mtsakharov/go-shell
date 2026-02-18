@@ -37,14 +37,23 @@ func main() {
 			if len(parts) > 1 {
 				fmt.Println(strings.Join(parts[1:], " "))
 			} else {
-				fmt.Println("echo is a shell builtin")
+				fmt.Println()
 			}
 
 		case "type":
-			fmt.Println("type is a shell builtin")
+			if len(parts) < 2 {
+				continue
+			}
+
+			switch parts[1] {
+			case "echo", "exit", "type":
+				fmt.Printf("%s is a shell builtin\n", parts[1])
+			default:
+				fmt.Printf("%s: not found\n", parts[1])
+			}
 
 		default:
-			fmt.Println(parts[0] + ":not found")
+			fmt.Println(parts[0] + ": command not found")
 		}
 	}
 }
