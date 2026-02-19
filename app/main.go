@@ -1,16 +1,19 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"github.com/chzyer/readline"
 )
 
 var _ = fmt.Print
+
+var builtins = []string{"echo", "exit", "type", "pwd", "cd"}
 
 func findInPath(cmd string) string {
 	pathEnv := os.Getenv("PATH")
@@ -111,17 +114,49 @@ func openOutput(path string, append bool) (*os.File, error) {
 	}
 	return os.Create(path)
 }
-func openFile(path string) (*os.File, error) {
-	return os.Create(path)
-}
+
+// completer completes builtin commands and PATH executables
+var completer = readline.NewPrefixCompleter(
+	readline.PcItemDynamic(func(prefix string) []string {
+		var matches []string
+		// check builtins
+		for _, b := range builtins {
+			if strings.HasPrefix(b, prefix) {
+				matches = append(matches, b)
+			}
+		}
+		// check PATH executables
+		for _, dir := range strings.Split(os.Getenv("PATH"), string(os.PathListSeparator)) {
+			entries, err := os.ReadDir(dir)
+			if err != nil {
+				continue
+			}
+			for _, e := range entries {
+				if strings.HasPrefix(e.Name(), prefix) {
+					info, err := e.Info()
+					if err == nil && !info.IsDir() && info.Mode()&0111 != 0 {
+						matches = append(matches, e.Name())
+					}
+				}
+			}
+		}
+		return matches
+	}),
+)
 
 func main() {
-	reader := bufio.NewReader(os.Stdin)
+	rl, err := readline.NewEx(&readline.Config{
+		Prompt:          "$ ",
+		AutoComplete:    completer,
+		InterruptPrompt: "^C",
+	})
+	if err != nil {
+		panic(err)
+	}
+	defer rl.Close()
 
 	for {
-		fmt.Print("$ ")
-
-		line, err := reader.ReadString('\n')
+		line, err := rl.Readline()
 		if err != nil {
 			os.Exit(0)
 		}
