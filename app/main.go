@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/chzyer/readline"
@@ -141,7 +142,10 @@ func openOutput(path string, appendMode bool) (*os.File, error) {
 
 // ── Tab completion ────────────────────────────────────────────────────────────
 
-type shellCompleter struct{}
+type shellCompleter struct {
+	lastInput string
+	tabCount  int
+}
 
 func (sc *shellCompleter) Do(line []rune, pos int) ([][]rune, int) {
 	input := string(line[:pos])
@@ -154,6 +158,13 @@ func (sc *shellCompleter) Do(line []rune, pos int) ([][]rune, int) {
 	if input == "" {
 		return nil, 0
 	}
+
+	// reset tab count if input changed
+	if input != sc.lastInput {
+		sc.lastInput = input
+		sc.tabCount = 0
+	}
+	sc.tabCount++
 
 	seen := map[string]bool{}
 	var matches []string
@@ -172,19 +183,30 @@ func (sc *shellCompleter) Do(line []rune, pos int) ([][]rune, int) {
 	}
 
 	if len(matches) == 0 {
-		fmt.Fprint(os.Stderr, "\x07") // ring the bell
+		fmt.Fprint(os.Stderr, "\x07")
 		return nil, 0
 	}
 
-	completions := make([][]rune, len(matches))
-	for i, m := range matches {
-		suffix := m[len(input):]
-		if len(matches) == 1 {
-			suffix += " "
-		}
-		completions[i] = []rune(suffix)
+	// single match — complete immediately with trailing space
+	if len(matches) == 1 {
+		sc.tabCount = 0
+		suffix := matches[0][len(input):] + " "
+		return [][]rune{[]rune(suffix)}, len(input)
 	}
-	return completions, len(input)
+
+	// multiple matches
+	sort.Strings(matches)
+
+	if sc.tabCount == 1 {
+		// first tab — ring the bell
+		fmt.Fprint(os.Stderr, "\x07")
+		return nil, 0
+	}
+
+	// second tab — print matches and redraw prompt
+	fmt.Fprintf(os.Stdout, "\n%s\n$ %s", strings.Join(matches, "  "), input)
+	sc.tabCount = 0
+	return nil, 0
 }
 
 // ── Builtins ──────────────────────────────────────────────────────────────────
