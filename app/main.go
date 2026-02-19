@@ -77,17 +77,14 @@ func main() {
 			}
 
 		case "cd":
-			if len(parts) < 2 {
-				// cd with no args goes to HOME
-				home := os.Getenv("HOME")
-				err := os.Chdir(home)
-				if err != nil {
-					fmt.Printf("directory not found")
-				}
+			dir := ""
+			if len(parts) < 2 || parts[1] == "~" {
+				dir = os.Getenv("HOME")
 			} else {
-				if err := os.Chdir(parts[1]); err != nil {
-					fmt.Printf("cd: %s: No such file or directory\n", parts[1])
-				}
+				dir = parts[1]
+			}
+			if err := os.Chdir(dir); err != nil {
+				fmt.Printf("cd: %s: No such file or directory\n", parts[1])
 			}
 
 		default:
