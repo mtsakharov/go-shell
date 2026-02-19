@@ -30,6 +30,7 @@ func parseArgs(line string) []string {
 	var args []string
 	var current strings.Builder
 	inSingle := false
+	inDouble := false
 
 	for i := 0; i < len(line); i++ {
 		c := line[i]
@@ -39,14 +40,35 @@ func parseArgs(line string) []string {
 			} else {
 				current.WriteByte(c)
 			}
+		} else if inDouble {
+			if c == '"' {
+				inDouble = false
+			} else if c == '\\' && i+1 < len(line) {
+				next := line[i+1]
+				if next == '"' || next == '\\' || next == '$' {
+					current.WriteByte(next)
+					i++
+				} else {
+					current.WriteByte(c)
+				}
+			} else {
+				current.WriteByte(c)
+			}
 		} else {
 			switch c {
 			case '\'':
 				inSingle = true
+			case '"':
+				inDouble = true
 			case ' ', '\t':
 				if current.Len() > 0 {
 					args = append(args, current.String())
 					current.Reset()
+				}
+			case '\\':
+				if i+1 < len(line) {
+					current.WriteByte(line[i+1])
+					i++
 				}
 			default:
 				current.WriteByte(c)
