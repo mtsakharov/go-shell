@@ -44,6 +44,7 @@ func runPipeline(segments [][]string, stdout, stderr io.Writer) {
 	}
 
 	// wire up pipes between adjacent commands
+	pipes := make([]*os.File, 0)
 	for i := 0; i < len(cmds)-1; i++ {
 		r, w, err := os.Pipe()
 		if err != nil {
@@ -52,9 +53,7 @@ func runPipeline(segments [][]string, stdout, stderr io.Writer) {
 		}
 		cmds[i].Stdout = w
 		cmds[i+1].Stdin = r
-		// close write end after child starts so read end gets EOF
-		defer w.Close()
-		defer r.Close()
+		pipes = append(pipes, r, w)
 	}
 
 	cmds[0].Stdin = os.Stdin
@@ -66,6 +65,13 @@ func runPipeline(segments [][]string, stdout, stderr io.Writer) {
 			fmt.Fprintf(stderr, "start error: %v\n", err)
 			return
 		}
+	}
+
+	// close pipe ends in PARENT after children have started
+	// children have their own copies of the file descriptors
+	// if parent keeps write end open, reader never gets EOF
+	for _, f := range pipes {
+		f.Close()
 	}
 
 	// wait for all to finish
