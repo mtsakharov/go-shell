@@ -147,19 +147,32 @@ type shellCompleter struct {
 	tabCount  int
 }
 
+func longestCommonPrefix(strs []string) string {
+	if len(strs) == 0 {
+		return ""
+	}
+	prefix := strs[0]
+	for _, s := range strs[1:] {
+		for !strings.HasPrefix(s, prefix) {
+			prefix = prefix[:len(prefix)-1]
+			if prefix == "" {
+				return ""
+			}
+		}
+	}
+	return prefix
+}
+
 func (sc *shellCompleter) Do(line []rune, pos int) ([][]rune, int) {
 	input := string(line[:pos])
 
-	// only complete the first word
 	if strings.ContainsAny(input, " \t") {
 		return nil, 0
 	}
-
 	if input == "" {
 		return nil, 0
 	}
 
-	// reset tab count if input changed
 	if input != sc.lastInput {
 		sc.lastInput = input
 		sc.tabCount = 0
@@ -187,23 +200,33 @@ func (sc *shellCompleter) Do(line []rune, pos int) ([][]rune, int) {
 		return nil, 0
 	}
 
-	// single match — complete immediately with trailing space
+	sort.Strings(matches)
+
+	// single match — complete with trailing space
 	if len(matches) == 1 {
 		sc.tabCount = 0
 		suffix := matches[0][len(input):] + " "
 		return [][]rune{[]rune(suffix)}, len(input)
 	}
 
-	// multiple matches
-	sort.Strings(matches)
+	// multiple matches — find LCP
+	lcp := longestCommonPrefix(matches)
 
+	// LCP is longer than current input — complete to LCP
+	if len(lcp) > len(input) {
+		sc.lastInput = lcp
+		sc.tabCount = 0
+		suffix := lcp[len(input):]
+		return [][]rune{[]rune(suffix)}, len(input)
+	}
+
+	// LCP == input, can't complete further
 	if sc.tabCount == 1 {
-		// first tab — ring the bell
 		fmt.Fprint(os.Stderr, "\x07")
 		return nil, 0
 	}
 
-	// second tab — print matches and redraw prompt
+	// second tab — show all matches
 	fmt.Fprintf(os.Stdout, "\n%s\n$ %s", strings.Join(matches, "  "), input)
 	sc.tabCount = 0
 	return nil, 0
