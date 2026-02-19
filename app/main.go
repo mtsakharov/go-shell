@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"io"
 	_ "log"
 	"os"
 	"os/exec"
@@ -81,6 +82,20 @@ func parseArgs(line string) []string {
 	return args
 }
 
+func extractRedirect(parts []string) (args []string, outFile string) {
+	for i := 0; i < len(parts); i++ {
+		if parts[i] == ">" || parts[i] == "1>" {
+			if i+1 < len(parts) {
+				outFile = parts[i+1]
+				i++ // skip filename
+			}
+		} else {
+			args = append(args, parts[i])
+		}
+	}
+	return
+}
+
 func main() {
 	reader := bufio.NewReader(os.Stdin)
 
@@ -98,6 +113,18 @@ func main() {
 		}
 
 		parts := parseArgs(line)
+		parts, outFile := extractRedirect(parts)
+
+		var stdout io.Writer = os.Stdout
+		if outFile != "" {
+			f, err := os.Create(outFile)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "cannot open %s: %v\n", outFile, err)
+				continue
+			}
+			defer f.Close()
+			stdout = f
+		}
 
 		switch parts[0] {
 		case "exit":
@@ -105,7 +132,8 @@ func main() {
 
 		case "echo":
 			if len(parts) > 1 {
-				fmt.Println(strings.Join(parts[1:], " "))
+				fmt.Fprintln(stdout, strings.Join(parts[1:], " "))
+
 			} else {
 				fmt.Println()
 			}
@@ -128,7 +156,7 @@ func main() {
 
 		case "pwd":
 			if wd, err := os.Getwd(); err == nil {
-				fmt.Println(wd)
+				fmt.Fprintln(stdout, wd)
 			}
 
 		case "cd":
@@ -146,7 +174,7 @@ func main() {
 			if path := findInPath(parts[0]); path != "" {
 				cmd := exec.Command(path, parts[1:]...)
 				cmd.Args = parts
-				cmd.Stdout = os.Stdout
+				cmd.Stdout = stdout
 				cmd.Stderr = os.Stderr
 				cmd.Stdin = os.Stdin
 				err := cmd.Run()
