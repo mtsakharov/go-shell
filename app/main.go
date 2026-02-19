@@ -5,6 +5,7 @@ import (
 	"fmt"
 	_ "log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 )
@@ -71,7 +72,18 @@ func main() {
 			}
 
 		default:
-			fmt.Println(parts[0] + ": command not found")
+			if path := findInPath(parts[0]); path != "" {
+				cmd := exec.Command(path, parts[1:]...)
+				cmd.Stdout = os.Stdout
+				cmd.Stderr = os.Stderr
+				cmd.Stdin = os.Stdin
+				err := cmd.Run()
+				if err != nil {
+					fmt.Printf("error")
+				}
+			} else {
+				fmt.Println(parts[0] + ": command not found")
+			}
 		}
 	}
 }
