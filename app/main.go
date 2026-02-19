@@ -5,11 +5,25 @@ import (
 	"fmt"
 	_ "log"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
 // Ensures gofmt doesn't remove the "fmt" import in stage 1 (feel free to remove this!)
 var _ = fmt.Print
+
+func findInPath(cmd string) string {
+	pathEnv := os.Getenv("PATH")
+	dirs := strings.Split(pathEnv, string(os.PathListSeparator))
+	for _, dir := range dirs {
+		full := filepath.Join(dir, cmd)
+		info, err := os.Stat(full)
+		if err == nil && !info.IsDir() && info.Mode()&0111 != 0 {
+			return full
+		}
+	}
+	return ""
+}
 
 func main() {
 	reader := bufio.NewReader(os.Stdin)
@@ -49,7 +63,11 @@ func main() {
 			case "echo", "exit", "type":
 				fmt.Printf("%s is a shell builtin\n", parts[1])
 			default:
-				fmt.Printf("%s: not found\n", parts[1])
+				if path := findInPath(parts[1]); path != "" {
+					fmt.Printf("%s is %s\n", parts[1], path)
+				} else {
+					fmt.Printf("%s: not found\n", parts[1])
+				}
 			}
 
 		default:
