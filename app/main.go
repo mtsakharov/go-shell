@@ -80,13 +80,23 @@ func parseArgs(line string) []string {
 	return args
 }
 
-func extractRedirect(parts []string) (args []string, outFile string, errFile string) {
+func extractRedirect(parts []string) (args []string, outFile string, outAppend bool, errFile string, errAppend bool) {
 	for i := 0; i < len(parts); i++ {
-		if (parts[i] == ">" || parts[i] == "1>") && i+1 < len(parts) {
+		if (parts[i] == ">>" || parts[i] == "1>>") && i+1 < len(parts) {
 			outFile = parts[i+1]
+			outAppend = true
+			i++
+		} else if (parts[i] == ">" || parts[i] == "1>") && i+1 < len(parts) {
+			outFile = parts[i+1]
+			outAppend = false
+			i++
+		} else if parts[i] == "2>>" && i+1 < len(parts) {
+			errFile = parts[i+1]
+			errAppend = true
 			i++
 		} else if parts[i] == "2>" && i+1 < len(parts) {
 			errFile = parts[i+1]
+			errAppend = false
 			i++
 		} else {
 			args = append(args, parts[i])
@@ -95,6 +105,12 @@ func extractRedirect(parts []string) (args []string, outFile string, errFile str
 	return
 }
 
+func openOutput(path string, append bool) (*os.File, error) {
+	if append {
+		return os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	}
+	return os.Create(path)
+}
 func openFile(path string) (*os.File, error) {
 	return os.Create(path)
 }
@@ -116,13 +132,13 @@ func main() {
 		}
 
 		parts := parseArgs(line)
-		parts, outFile, errFile := extractRedirect(parts)
+		parts, outFile, outAppend, errFile, errAppend := extractRedirect(parts)
 
 		var stdout io.Writer = os.Stdout
 		var stderr io.Writer = os.Stderr
 
 		if outFile != "" {
-			f, err := openFile(outFile)
+			f, err := openOutput(outFile, outAppend)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "cannot open %s: %v\n", outFile, err)
 				continue
@@ -132,7 +148,7 @@ func main() {
 		}
 
 		if errFile != "" {
-			f, err := openFile(errFile)
+			f, err := openOutput(errFile, errAppend)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "cannot open %s: %v\n", errFile, err)
 				continue
