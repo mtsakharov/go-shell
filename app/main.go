@@ -48,12 +48,16 @@ func main() {
 			continue
 		}
 
-		// single command
 		parts, redir := extractRedirect(segments[0])
 		if len(parts) == 0 {
 			continue
 		}
 		stdout, stderr := resolveStreams(redir)
+
+		if parts[0] == "exit" {
+			return
+		}
+		dispatchSingle(parts, stdout, stderr)
 
 		switch parts[0] {
 		case "exit":
