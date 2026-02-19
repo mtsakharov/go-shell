@@ -47,8 +47,8 @@ func runCd(args []string, stderr io.Writer) {
 	}
 }
 
-func runHistory(history []string, stdout io.Writer) {
-	for i, cmd := range history {
+func runHistory(stdout io.Writer) {
+	for i, cmd := range commandHistory {
 		fmt.Fprintf(stdout, "    %d  %s\n", i+1, cmd)
 	}
 }
