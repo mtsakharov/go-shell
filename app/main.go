@@ -26,6 +26,39 @@ func findInPath(cmd string) string {
 	return ""
 }
 
+func parseArgs(line string) []string {
+	var args []string
+	var current strings.Builder
+	inSingle := false
+
+	for i := 0; i < len(line); i++ {
+		c := line[i]
+		if inSingle {
+			if c == '\'' {
+				inSingle = false
+			} else {
+				current.WriteByte(c)
+			}
+		} else {
+			switch c {
+			case '\'':
+				inSingle = true
+			case ' ', '\t':
+				if current.Len() > 0 {
+					args = append(args, current.String())
+					current.Reset()
+				}
+			default:
+				current.WriteByte(c)
+			}
+		}
+	}
+	if current.Len() > 0 {
+		args = append(args, current.String())
+	}
+	return args
+}
+
 func main() {
 	reader := bufio.NewReader(os.Stdin)
 
@@ -42,7 +75,7 @@ func main() {
 			continue
 		}
 
-		parts := strings.Fields(line)
+		parts := parseArgs(line)
 
 		switch parts[0] {
 		case "exit":
