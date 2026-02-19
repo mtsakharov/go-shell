@@ -74,6 +74,7 @@ func main() {
 		default:
 			if path := findInPath(parts[0]); path != "" {
 				cmd := exec.Command(path, parts[1:]...)
+				cmd.Args = parts
 				cmd.Stdout = os.Stdout
 				cmd.Stderr = os.Stderr
 				cmd.Stdin = os.Stdin
