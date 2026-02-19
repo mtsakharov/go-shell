@@ -151,6 +151,10 @@ func (sc *shellCompleter) Do(line []rune, pos int) ([][]rune, int) {
 		return nil, 0
 	}
 
+	if input == "" {
+		return nil, 0
+	}
+
 	seen := map[string]bool{}
 	var matches []string
 
@@ -168,6 +172,7 @@ func (sc *shellCompleter) Do(line []rune, pos int) ([][]rune, int) {
 	}
 
 	if len(matches) == 0 {
+		fmt.Fprint(os.Stderr, "\x07") // ring the bell
 		return nil, 0
 	}
 
