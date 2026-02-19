@@ -4,14 +4,12 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	_ "log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 )
 
-// Ensures gofmt doesn't remove the "fmt" import in stage 1 (feel free to remove this!)
 var _ = fmt.Print
 
 func findInPath(cmd string) string {
@@ -82,18 +80,23 @@ func parseArgs(line string) []string {
 	return args
 }
 
-func extractRedirect(parts []string) (args []string, outFile string) {
+func extractRedirect(parts []string) (args []string, outFile string, errFile string) {
 	for i := 0; i < len(parts); i++ {
-		if parts[i] == ">" || parts[i] == "1>" {
-			if i+1 < len(parts) {
-				outFile = parts[i+1]
-				i++ // skip filename
-			}
+		if (parts[i] == ">" || parts[i] == "1>") && i+1 < len(parts) {
+			outFile = parts[i+1]
+			i++
+		} else if parts[i] == "2>" && i+1 < len(parts) {
+			errFile = parts[i+1]
+			i++
 		} else {
 			args = append(args, parts[i])
 		}
 	}
 	return
+}
+
+func openFile(path string) (*os.File, error) {
+	return os.Create(path)
 }
 
 func main() {
@@ -113,17 +116,29 @@ func main() {
 		}
 
 		parts := parseArgs(line)
-		parts, outFile := extractRedirect(parts)
+		parts, outFile, errFile := extractRedirect(parts)
 
 		var stdout io.Writer = os.Stdout
+		var stderr io.Writer = os.Stderr
+
 		if outFile != "" {
-			f, err := os.Create(outFile)
+			f, err := openFile(outFile)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "cannot open %s: %v\n", outFile, err)
 				continue
 			}
 			defer f.Close()
 			stdout = f
+		}
+
+		if errFile != "" {
+			f, err := openFile(errFile)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "cannot open %s: %v\n", errFile, err)
+				continue
+			}
+			defer f.Close()
+			stderr = f
 		}
 
 		switch parts[0] {
@@ -133,24 +148,22 @@ func main() {
 		case "echo":
 			if len(parts) > 1 {
 				fmt.Fprintln(stdout, strings.Join(parts[1:], " "))
-
 			} else {
-				fmt.Println()
+				fmt.Fprintln(stdout)
 			}
 
 		case "type":
 			if len(parts) < 2 {
 				continue
 			}
-
 			switch parts[1] {
-			case "echo", "exit", "type", "pwd":
-				fmt.Printf("%s is a shell builtin\n", parts[1])
+			case "echo", "exit", "type", "pwd", "cd":
+				fmt.Fprintf(stdout, "%s is a shell builtin\n", parts[1])
 			default:
 				if path := findInPath(parts[1]); path != "" {
-					fmt.Printf("%s is %s\n", parts[1], path)
+					fmt.Fprintf(stdout, "%s is %s\n", parts[1], path)
 				} else {
-					fmt.Printf("%s: not found\n", parts[1])
+					fmt.Fprintf(stderr, "%s: not found\n", parts[1])
 				}
 			}
 
@@ -167,7 +180,7 @@ func main() {
 				dir = parts[1]
 			}
 			if err := os.Chdir(dir); err != nil {
-				fmt.Printf("cd: %s: No such file or directory\n", parts[1])
+				fmt.Fprintf(stderr, "cd: %s: No such file or directory\n", dir)
 			}
 
 		default:
@@ -175,11 +188,11 @@ func main() {
 				cmd := exec.Command(path, parts[1:]...)
 				cmd.Args = parts
 				cmd.Stdout = stdout
-				cmd.Stderr = os.Stderr
+				cmd.Stderr = stderr
 				cmd.Stdin = os.Stdin
 				cmd.Run()
 			} else {
-				fmt.Println(parts[0] + ": command not found")
+				fmt.Fprintf(stderr, "%s: command not found\n", parts[0])
 			}
 		}
 	}
