@@ -61,7 +61,7 @@ func main() {
 			}
 
 			switch parts[1] {
-			case "echo", "exit", "type":
+			case "echo", "exit", "type", "pwd":
 				fmt.Printf("%s is a shell builtin\n", parts[1])
 			default:
 				if path := findInPath(parts[1]); path != "" {
@@ -69,6 +69,11 @@ func main() {
 				} else {
 					fmt.Printf("%s: not found\n", parts[1])
 				}
+			}
+
+		case "pwd":
+			if wd, err := os.Getwd(); err == nil {
+				fmt.Println(wd)
 			}
 
 		default:
