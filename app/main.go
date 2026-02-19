@@ -177,10 +177,7 @@ func main() {
 				cmd.Stdout = stdout
 				cmd.Stderr = os.Stderr
 				cmd.Stdin = os.Stdin
-				err := cmd.Run()
-				if err != nil {
-					fmt.Printf("error")
-				}
+				cmd.Run()
 			} else {
 				fmt.Println(parts[0] + ": command not found")
 			}
