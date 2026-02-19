@@ -36,11 +36,9 @@ func main() {
 			continue
 		}
 
-		// split on "|" before extracting redirects
 		segments := splitPipeline(parts)
 
 		if len(segments) > 1 {
-			// last segment may have redirects
 			lastSeg, redir := extractRedirect(segments[len(segments)-1])
 			segments[len(segments)-1] = lastSeg
 			stdout, stderr := resolveStreams(redir)
@@ -58,20 +56,5 @@ func main() {
 			return
 		}
 		dispatchSingle(parts, stdout, stderr)
-
-		switch parts[0] {
-		case "exit":
-			return
-		case "echo":
-			runEcho(parts[1:], stdout)
-		case "type":
-			runType(parts[1:], stdout, stderr)
-		case "pwd":
-			runPwd(stdout)
-		case "cd":
-			runCd(parts[1:], stderr)
-		default:
-			runExternal(parts, os.Stdin, stdout, stderr)
-		}
 	}
 }
