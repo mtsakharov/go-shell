@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-var builtins = []string{"echo", "exit", "type", "pwd", "cd"}
+var builtins = []string{"echo", "exit", "type", "pwd", "cd", "history"}
 
 func runEcho(args []string, stdout io.Writer) {
 	fmt.Fprintln(stdout, strings.Join(args, " "))
@@ -44,5 +44,11 @@ func runCd(args []string, stderr io.Writer) {
 	}
 	if err := os.Chdir(dir); err != nil {
 		fmt.Fprintf(stderr, "cd: %s: No such file or directory\n", dir)
+	}
+}
+
+func runHistory(history []string, stdout io.Writer) {
+	for i, cmd := range history {
+		fmt.Fprintf(stdout, "    %d  %s\n", i+1, cmd)
 	}
 }

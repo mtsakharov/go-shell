@@ -8,6 +8,8 @@ import (
 	"github.com/chzyer/readline"
 )
 
+var commandHistory []string
+
 func main() {
 	rl, err := readline.NewEx(&readline.Config{
 		Prompt:          "$ ",
@@ -30,6 +32,8 @@ func main() {
 		if line == "" {
 			continue
 		}
+
+		commandHistory = append(commandHistory, line)
 
 		parts := parseArgs(line)
 		if len(parts) == 0 {
