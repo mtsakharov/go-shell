@@ -90,9 +90,10 @@ func runHistory(args []string, stdout io.Writer) {
 			return
 		}
 		defer f.Close()
-		for _, cmd := range commandHistory {
+		for _, cmd := range commandHistory[historyOffset:] {
 			fmt.Fprintln(f, cmd)
 		}
+		historyOffset = len(commandHistory) // <- обновляем после записи
 		return
 	}
 
