@@ -49,7 +49,7 @@ func runCd(args []string, stderr io.Writer) {
 }
 
 func runHistory(args []string, stdout io.Writer) {
-	// history -r <file> — читаем историю из файла
+	// history -r <file> — читаем из файла
 	if len(args) >= 2 && args[0] == "-r" {
 		data, err := os.ReadFile(args[1])
 		if err != nil {
@@ -62,6 +62,20 @@ func runHistory(args []string, stdout io.Writer) {
 			if line != "" {
 				commandHistory = append(commandHistory, line)
 			}
+		}
+		return
+	}
+
+	// history -w <file> — пишем в файл
+	if len(args) >= 2 && args[0] == "-w" {
+		var sb strings.Builder
+		for _, cmd := range commandHistory {
+			sb.WriteString(cmd)
+			sb.WriteByte('\n')
+		}
+		err := os.WriteFile(args[1], []byte(sb.String()), 0644)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "history: %s: %v\n", args[1], err)
 		}
 		return
 	}
