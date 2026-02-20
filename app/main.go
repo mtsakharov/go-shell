@@ -10,6 +10,8 @@ import (
 
 var commandHistory []string
 
+var historyOffset int
+
 func main() {
 	rl, err := readline.NewEx(&readline.Config{
 		Prompt:          "$ ",

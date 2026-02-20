@@ -63,6 +63,8 @@ func runHistory(args []string, stdout io.Writer) {
 				commandHistory = append(commandHistory, line)
 			}
 		}
+
+		historyOffset = len(commandHistory)
 		return
 	}
 
@@ -76,6 +78,20 @@ func runHistory(args []string, stdout io.Writer) {
 		err := os.WriteFile(args[1], []byte(sb.String()), 0644)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "history: %s: %v\n", args[1], err)
+		}
+		return
+	}
+
+	// history -a <file> — дописываем в конец файла
+	if len(args) >= 2 && args[0] == "-a" {
+		f, err := os.OpenFile(args[1], os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "history: %s: %v\n", args[1], err)
+			return
+		}
+		defer f.Close()
+		for _, cmd := range commandHistory {
+			fmt.Fprintln(f, cmd)
 		}
 		return
 	}
