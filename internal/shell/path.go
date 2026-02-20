@@ -1,4 +1,4 @@
-package main
+package shell
 
 import (
 	"os"
@@ -6,6 +6,7 @@ import (
 	"strings"
 )
 
+// findInPath locates an executable by name in the PATH directories.
 func findInPath(cmd string) string {
 	for _, dir := range filepath.SplitList(os.Getenv("PATH")) {
 		full := filepath.Join(dir, cmd)
@@ -16,6 +17,7 @@ func findInPath(cmd string) string {
 	return ""
 }
 
+// executablesInPath returns all executables in PATH matching the given prefix.
 func executablesInPath(prefix string) []string {
 	seen := map[string]bool{}
 	var results []string

@@ -1,4 +1,4 @@
-package main
+package shell
 
 import (
 	"fmt"
@@ -13,6 +13,7 @@ type redirect struct {
 	errAppend bool
 }
 
+// extractRedirect separates redirection tokens from command arguments.
 func extractRedirect(parts []string) (args []string, r redirect) {
 	for i := 0; i < len(parts); i++ {
 		tok := parts[i]
@@ -44,10 +45,10 @@ func openOutput(path string, appendMode bool) (*os.File, error) {
 	return os.Create(path)
 }
 
+// resolveStreams returns stdout and stderr writers based on redirection config.
 func resolveStreams(r redirect) (stdout, stderr io.Writer) {
 	stdout = os.Stdout
 	stderr = os.Stderr
-
 	if r.outFile != "" {
 		f, err := openOutput(r.outFile, r.outAppend)
 		if err != nil {
