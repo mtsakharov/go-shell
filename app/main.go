@@ -13,6 +13,20 @@ var commandHistory []string
 var historyOffset int
 
 func main() {
+	if histFile := os.Getenv("HISTFILE"); histFile != "" {
+		data, err := os.ReadFile(histFile)
+		if err == nil {
+			lines := strings.Split(strings.TrimRight(string(data), "\n"), "\n")
+			for _, line := range lines {
+				line = strings.TrimSpace(line)
+				if line != "" {
+					commandHistory = append(commandHistory, line)
+				}
+			}
+			historyOffset = len(commandHistory) // новые команды пишем после загруженных
+		}
+	}
+
 	rl, err := readline.NewEx(&readline.Config{
 		Prompt:          "$ ",
 		AutoComplete:    &shellCompleter{},
