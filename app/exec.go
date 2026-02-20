@@ -37,7 +37,7 @@ func runSegment(parts []string, stdin io.Reader, stdout, stderr io.Writer) {
 	case "cd":
 		runCd(parts[1:], stderr)
 	case "history":
-		runHistory(stdout)
+		runHistory(parts[1:], stdout)
 
 	default:
 		runExternal(parts, stdin, stdout, stderr)

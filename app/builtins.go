@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -47,8 +48,19 @@ func runCd(args []string, stderr io.Writer) {
 	}
 }
 
-func runHistory(stdout io.Writer) {
-	for i, cmd := range commandHistory {
-		fmt.Fprintf(stdout, "    %d  %s\n", i+1, cmd)
+func runHistory(args []string, stdout io.Writer) {
+	history := commandHistory
+
+	if len(args) > 0 {
+		n, err := strconv.Atoi(args[0])
+		if err == nil && n > 0 && n < len(history) {
+			history = history[len(history)-n:]
+		}
+	}
+
+	// offset — номер первой записи в срезе
+	offset := len(commandHistory) - len(history) + 1
+	for i, cmd := range history {
+		fmt.Fprintf(stdout, "    %d  %s\n", offset+i, cmd)
 	}
 }
