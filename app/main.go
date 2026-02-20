@@ -41,6 +41,7 @@ func main() {
 	for {
 		line, err := rl.Readline()
 		if err != nil {
+			saveHistory()
 			os.Exit(0)
 		}
 
@@ -54,6 +55,12 @@ func main() {
 		parts := parseArgs(line)
 		if len(parts) == 0 {
 			continue
+		}
+
+		// при команде exit
+		if parts[0] == "exit" {
+			saveHistory()
+			return
 		}
 
 		segments := splitPipeline(parts)
@@ -75,6 +82,23 @@ func main() {
 		if parts[0] == "exit" {
 			return
 		}
+
 		dispatchSingle(parts, stdout, stderr)
+	}
+}
+
+func saveHistory() {
+	histFile := os.Getenv("HISTFILE")
+	if histFile == "" {
+		return
+	}
+	f, err := os.Create(histFile)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "history: %s: %v\n", histFile, err)
+		return
+	}
+	defer f.Close()
+	for _, cmd := range commandHistory {
+		fmt.Fprintln(f, cmd)
 	}
 }
