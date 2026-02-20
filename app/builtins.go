@@ -49,8 +49,25 @@ func runCd(args []string, stderr io.Writer) {
 }
 
 func runHistory(args []string, stdout io.Writer) {
-	history := commandHistory
+	// history -r <file> — читаем историю из файла
+	if len(args) >= 2 && args[0] == "-r" {
+		data, err := os.ReadFile(args[1])
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "history: %s: %v\n", args[1], err)
+			return
+		}
+		lines := strings.Split(strings.TrimRight(string(data), "\n"), "\n")
+		for _, line := range lines {
+			line = strings.TrimSpace(line)
+			if line != "" {
+				commandHistory = append(commandHistory, line)
+			}
+		}
+		return
+	}
 
+	// history <n> — последние n записей
+	history := commandHistory
 	if len(args) > 0 {
 		n, err := strconv.Atoi(args[0])
 		if err == nil && n > 0 && n < len(history) {
@@ -58,7 +75,6 @@ func runHistory(args []string, stdout io.Writer) {
 		}
 	}
 
-	// offset — номер первой записи в срезе
 	offset := len(commandHistory) - len(history) + 1
 	for i, cmd := range history {
 		fmt.Fprintf(stdout, "    %d  %s\n", offset+i, cmd)
