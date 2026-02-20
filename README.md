@@ -1,34 +1,112 @@
-[![progress-banner](https://backend.codecrafters.io/progress/shell/b8096eb4-0945-4a8d-a34c-9de1473cf2d1)](https://app.codecrafters.io/users/mtsakharov?r=2qF)
+# gosh - Go Shell
 
-This is a starting point for Go solutions to the
-["Build Your Own Shell" Challenge](https://app.codecrafters.io/courses/shell/overview).
+A lightweight, interactive POSIX-like shell written in Go. Built as part of the [CodeCrafters "Build Your Own Shell"](https://app.codecrafters.io/courses/shell/overview) challenge, then refactored into a standalone project.
 
-In this challenge, you'll build your own POSIX compliant shell that's capable of
-interpreting shell commands, running external programs and builtin commands like
-cd, pwd, echo and more. Along the way, you'll learn about shell command parsing,
-REPLs, builtin commands, and more.
+## Features
 
-**Note**: If you're viewing this repo on GitHub, head over to
-[codecrafters.io](https://codecrafters.io) to try the challenge.
+- **Interactive REPL** with readline support (line editing, history navigation)
+- **Builtin commands**: `echo`, `exit`, `type`, `pwd`, `cd`, `history`
+- **External command execution** via PATH lookup
+- **Pipelines**: chain commands with `|`
+- **I/O redirection**: `>`, `>>`, `2>`, `2>>` (stdout and stderr)
+- **Quote handling**: single quotes, double quotes with escape sequences
+- **Tab completion** for builtins and executables
+- **Persistent command history** via `HISTFILE` environment variable
 
-# Passing the first stage
+## Requirements
 
-The entry point for your `shell` implementation is in `app/main.go`. Study and
-uncomment the relevant code, and push your changes to pass the first stage:
+- Go 1.25+
+
+## Installation
 
 ```sh
-git commit -am "pass 1st stage" # any msg
-git push origin master
+# Clone the repository
+git clone https://github.com/mtsakharov/go-shell.git
+cd go-shell
+
+# Build
+make build
+
+# Or install directly
+go install ./cmd/gosh
 ```
 
-Time to move on to the next stage!
+## Usage
 
-# Stage 2 & beyond
+```sh
+# Run the shell
+./gosh
 
-Note: This section is for stages 2 and beyond.
+# Or with history persistence
+HISTFILE=~/.gosh_history ./gosh
+```
 
-1. Ensure you have `go (1.25)` installed locally
-1. Run `./your_program.sh` to run your program, which is implemented in
-   `app/main.go`.
-1. Commit your changes and run `git push origin master` to submit your solution
-   to CodeCrafters. Test output will be streamed to your terminal.
+### Builtin Commands
+
+| Command | Description |
+|---------|-------------|
+| `echo [args...]` | Print arguments to stdout |
+| `exit` | Exit the shell |
+| `type <command>` | Show whether a command is a builtin or its path |
+| `pwd` | Print the current working directory |
+| `cd [dir]` | Change directory (defaults to `$HOME`) |
+| `history [n]` | Show command history (last `n` entries) |
+| `history -r <file>` | Read history from file |
+| `history -w <file>` | Write history to file |
+| `history -a <file>` | Append new history entries to file |
+
+### Pipelines
+
+```sh
+$ echo hello | cat
+hello
+$ ls -la | grep go | head -5
+```
+
+### Redirection
+
+```sh
+$ echo hello > output.txt       # truncate stdout to file
+$ echo world >> output.txt      # append stdout to file
+$ cmd 2> errors.log             # redirect stderr to file
+$ cmd 2>> errors.log            # append stderr to file
+```
+
+## Project Structure
+
+```
+go-shell/
+├── cmd/
+│   └── gosh/
+│       └── main.go             # Entry point
+├── internal/
+│   └── shell/
+│       ├── shell.go            # Shell struct, REPL loop, history
+│       ├── builtins.go         # Builtin command implementations
+│       ├── exec.go             # Command dispatch and pipeline execution
+│       ├── parse.go            # Argument parsing and pipeline splitting
+│       ├── path.go             # PATH lookup utilities
+│       ├── redirect.go         # I/O redirection handling
+│       └── complete.go         # Tab completion
+├── docs/
+│   └── architecture.md         # Architecture documentation
+├── Makefile
+├── go.mod
+├── go.sum
+├── README.md
+└── CONTRIBUTING.md
+```
+
+## Development
+
+```sh
+make build   # Build the binary
+make run     # Build and run
+make test    # Run tests
+make lint    # Run go vet
+make clean   # Remove build artifacts
+```
+
+## License
+
+MIT

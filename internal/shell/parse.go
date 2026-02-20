@@ -1,16 +1,18 @@
-package main
+package shell
 
 import "strings"
 
+// parseArgs splits a command line into arguments, respecting single quotes,
+// double quotes, and backslash escapes.
 func parseArgs(line string) []string {
 	var args []string
-	var current strings.Builder
+	var cur strings.Builder
 	inSingle, inDouble := false, false
 
 	flush := func() {
-		if current.Len() > 0 {
-			args = append(args, current.String())
-			current.Reset()
+		if cur.Len() > 0 {
+			args = append(args, cur.String())
+			cur.Reset()
 		}
 	}
 
@@ -21,7 +23,7 @@ func parseArgs(line string) []string {
 			if c == '\'' {
 				inSingle = false
 			} else {
-				current.WriteByte(c)
+				cur.WriteByte(c)
 			}
 		case inDouble:
 			if c == '"' {
@@ -29,13 +31,13 @@ func parseArgs(line string) []string {
 			} else if c == '\\' && i+1 < len(line) {
 				next := line[i+1]
 				if next == '"' || next == '\\' || next == '$' {
-					current.WriteByte(next)
+					cur.WriteByte(next)
 					i++
 				} else {
-					current.WriteByte(c)
+					cur.WriteByte(c)
 				}
 			} else {
-				current.WriteByte(c)
+				cur.WriteByte(c)
 			}
 		case c == '\'':
 			inSingle = true
@@ -44,17 +46,17 @@ func parseArgs(line string) []string {
 		case c == ' ' || c == '\t':
 			flush()
 		case c == '\\' && i+1 < len(line):
-			current.WriteByte(line[i+1])
+			cur.WriteByte(line[i+1])
 			i++
 		default:
-			current.WriteByte(c)
+			cur.WriteByte(c)
 		}
 	}
 	flush()
 	return args
 }
 
-// splitPipeline splits a parsed arg list on "|" tokens into segments
+// splitPipeline divides a parsed argument list on "|" tokens into segments.
 func splitPipeline(parts []string) [][]string {
 	var segments [][]string
 	var current []string
